@@ -20,20 +20,15 @@ struct Records(Vec<csv::StringRecord>);
 
 impl ToRuby for Records {
     fn to_ruby(self) -> ToRubyResult {
-        let ary = unsafe { sys::rb_ary_new_capa(self.0.len() as isize) };
-        for row in self.0 {
-            let inner_array = unsafe { sys::rb_ary_new_capa(row.len() as isize) };
-            for column in row.iter() {
-                unsafe {
-                    sys::rb_ary_push(inner_array, column.to_ruby()?);
-                }
-            }
-            unsafe {
-                sys::rb_ary_push(ary, inner_array);
-            }
-        }
-        Ok(ary)
+        self.0.into_iter()
+            .map(row_to_ruby)
+            .collect::<Vec<ToRubyResult>>()
+            .to_ruby()
     }
+}
+
+fn row_to_ruby(row: csv::StringRecord) -> ToRubyResult {
+    row.iter().collect::<Vec<&str>>().to_ruby()
 }
 
 fn generate_lines(rows: Vec<Vec<String>>) -> Result<String, Box<Error>> {
